@@ -1,5 +1,7 @@
 const Job = require('../models/Job');
-const { getEmbedding } = require('../lib/matchScore');
+const User = require('../models/User');
+const Application = require('../models/Application');
+const { getEmbedding, cosineSimilarity, mapSimilarityToScore } = require('../lib/matchScore');
 
 // Create a new job (Recruiter only)
 const createJob = async (req, res) => {
@@ -31,15 +33,20 @@ const createJob = async (req, res) => {
   }
 };
 
-// Get jobs posted by the logged-in recruiter (Recruiter only)
+// Get jobs posted by the logged-in recruiter (Recruiter only) with real applicant counts
 const getMyJobs = async (req, res) => {
   try {
     const jobs = await Job.find({ recruiterId: req.user.userId }).sort({ createdAt: -1 });
 
-    const jobsWithApplicantCount = jobs.map((job) => ({
-      ...job.toObject(),
-      applicantCount: 0
-    }));
+    const jobsWithApplicantCount = await Promise.all(
+      jobs.map(async (job) => {
+        const applicantCount = await Application.countDocuments({ jobId: job._id });
+        return {
+          ...job.toObject(),
+          applicantCount
+        };
+      })
+    );
 
     res.json(jobsWithApplicantCount);
   } catch (error) {
@@ -129,10 +136,59 @@ const getOpenJobs = async (req, res) => {
   }
 };
 
+// Get open jobs matched against candidate resume embedding (Candidate only)
+const getMatchedJobs = async (req, res) => {
+  try {
+    const user = await User.findById(req.user.userId);
+
+    if (!user || !user.resumeEmbedding || user.resumeEmbedding.length === 0) {
+      return res.status(400).json({
+        message: 'Please save your resume first before browsing matched jobs.'
+      });
+    }
+
+    const { search, jobType, location } = req.query;
+    const query = { status: 'open' };
+
+    if (search) {
+      query.title = { $regex: search, $options: 'i' };
+    }
+    if (jobType) {
+      query.jobType = jobType;
+    }
+    if (location) {
+      query.location = { $regex: location, $options: 'i' };
+    }
+
+    const jobs = await Job.find(query);
+
+    const jobsWithScores = jobs.map((job) => {
+      let matchScore = 0;
+      if (job.descriptionEmbedding && job.descriptionEmbedding.length > 0) {
+        const similarity = cosineSimilarity(user.resumeEmbedding, job.descriptionEmbedding);
+        matchScore = mapSimilarityToScore(similarity);
+      }
+      return {
+        ...job.toObject(),
+        matchScore
+      };
+    });
+
+    // Sort by matchScore descending
+    jobsWithScores.sort((a, b) => b.matchScore - a.matchScore);
+
+    res.json(jobsWithScores);
+  } catch (error) {
+    console.error('Error fetching matched jobs:', error);
+    res.status(500).json({ message: 'Failed to fetch matched jobs', error: error.message });
+  }
+};
+
 module.exports = {
   createJob,
   getMyJobs,
   updateJob,
   deleteJob,
-  getOpenJobs
+  getOpenJobs,
+  getMatchedJobs
 };

@@ -6,8 +6,11 @@ const {
   getMyJobs,
   updateJob,
   deleteJob,
-  getOpenJobs
+  getOpenJobs,
+  getMatchedJobs
 } = require('../controllers/jobController');
+
+const { getApplicantsForJob } = require('../controllers/applicationController');
 
 const authMiddleware = require('../middleware/authMiddleware');
 const requireRole = require('../middleware/requireRole');
@@ -15,9 +18,17 @@ const requireRole = require('../middleware/requireRole');
 // Public route: Get all open jobs
 router.get('/', getOpenJobs);
 
-// Recruiter routes
-router.post('/', authMiddleware, requireRole('recruiter'), createJob);
+// Candidate route: Get open jobs ranked by matchScore
+router.get('/matched', authMiddleware, requireRole('candidate'), getMatchedJobs);
+
+// Recruiter route: Get jobs posted by logged-in recruiter
 router.get('/mine', authMiddleware, requireRole('recruiter'), getMyJobs);
+
+// Recruiter route: Get ranked applicants for a specific job
+router.get('/:jobId/applicants', authMiddleware, requireRole('recruiter'), getApplicantsForJob);
+
+// Recruiter routes: CRUD operations on jobs
+router.post('/', authMiddleware, requireRole('recruiter'), createJob);
 router.patch('/:id', authMiddleware, requireRole('recruiter'), updateJob);
 router.delete('/:id', authMiddleware, requireRole('recruiter'), deleteJob);
 
