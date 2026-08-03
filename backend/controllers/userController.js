@@ -1,6 +1,20 @@
 const User = require('../models/User');
 const { getEmbedding } = require('../lib/matchScore');
 
+// Get current logged-in user profile
+const getMe = async (req, res) => {
+  try {
+    const user = await User.findById(req.user.userId).select('-passwordHash');
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+    res.json(user);
+  } catch (error) {
+    console.error('Error fetching user profile:', error);
+    res.status(500).json({ message: 'Failed to fetch user profile', error: error.message });
+  }
+};
+
 // Update candidate resume and precompute embedding
 const updateResume = async (req, res) => {
   try {
@@ -34,5 +48,6 @@ const updateResume = async (req, res) => {
 };
 
 module.exports = {
+  getMe,
   updateResume
 };
