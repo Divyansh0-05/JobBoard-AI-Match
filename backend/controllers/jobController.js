@@ -1,4 +1,5 @@
 const Job = require('../models/Job');
+const { getEmbedding } = require('../lib/matchScore');
 
 // Create a new job (Recruiter only)
 const createJob = async (req, res) => {
@@ -9,10 +10,14 @@ const createJob = async (req, res) => {
       return res.status(400).json({ message: 'Title and description are required.' });
     }
 
+    // Compute embedding for job description
+    const descriptionEmbedding = await getEmbedding(description);
+
     const job = await Job.create({
       recruiterId: req.user.userId,
       title,
       description,
+      descriptionEmbedding,
       location: location || '',
       jobType,
       salaryRange: salaryRange || '',
@@ -62,6 +67,11 @@ const updateJob = async (req, res) => {
         job[field] = req.body[field];
       }
     });
+
+    // Recompute embedding if description was updated
+    if (req.body.description !== undefined) {
+      job.descriptionEmbedding = await getEmbedding(job.description);
+    }
 
     await job.save();
     res.json(job);
