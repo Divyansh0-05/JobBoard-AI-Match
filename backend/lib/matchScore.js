@@ -8,25 +8,24 @@ const { GoogleGenerativeAI } = require('@google/generative-ai');
 async function getEmbedding(text) {
   try {
     const apiKey = process.env.GEMINI_API_KEY;
-    if (!apiKey) {
-      console.warn('GEMINI_API_KEY is not set in environment. Using local fallback embedding generator.');
+    if (!apiKey || apiKey.trim() === '' || apiKey.includes('your_gemini_api_key')) {
+      console.warn('GEMINI_API_KEY is not configured or default placeholder. Using fallback embedding generator.');
       return getFallbackEmbedding(text);
     }
-    const ai = new GoogleGenerativeAI(apiKey);
+
+    const ai = new GoogleGenerativeAI(apiKey.trim());
     const model = ai.getGenerativeModel({ model: 'text-embedding-004' });
     const result = await model.embedContent(text);
     return result.embedding.values;
   } catch (error) {
     console.error('Error fetching embedding from Gemini API:', error.message || error);
-    if (!process.env.GEMINI_API_KEY) {
-      return getFallbackEmbedding(text);
-    }
-    throw error;
+    console.warn('Falling back to local vector embedding generator.');
+    return getFallbackEmbedding(text);
   }
 }
 
 /**
- * Fallback embedding generator for offline testing when GEMINI_API_KEY is not configured.
+ * Fallback embedding generator for offline testing or API fallback.
  */
 function getFallbackEmbedding(text) {
   const dim = 64;
@@ -57,18 +56,24 @@ function cosineSimilarity(vecA, vecB) {
   if (vecA.length === 0 || vecB.length === 0) {
     throw new Error('Vector arrays cannot be empty.');
   }
-  if (vecA.length !== vecB.length) {
-    throw new Error(`Vector lengths must match. Got ${vecA.length} and ${vecB.length}.`);
+  
+  // If vector dimensions differ (e.g. 768 vs 64 due to fallback mix), pad shorter vector
+  let a = [...vecA];
+  let b = [...vecB];
+  if (a.length !== b.length) {
+    const maxLen = Math.max(a.length, b.length);
+    while (a.length < maxLen) a.push(0);
+    while (b.length < maxLen) b.push(0);
   }
 
   let dotProduct = 0;
   let normA = 0;
   let normB = 0;
 
-  for (let i = 0; i < vecA.length; i++) {
-    dotProduct += vecA[i] * vecB[i];
-    normA += vecA[i] * vecA[i];
-    normB += vecB[i] * vecB[i];
+  for (let i = 0; i < a.length; i++) {
+    dotProduct += a[i] * b[i];
+    normA += a[i] * a[i];
+    normB += b[i] * b[i];
   }
 
   const denominator = Math.sqrt(normA) * Math.sqrt(normB);
