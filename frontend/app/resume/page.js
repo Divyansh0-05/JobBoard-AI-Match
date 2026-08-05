@@ -4,7 +4,9 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import axios from 'axios';
 import { useAuth } from '@/context/AuthContext';
+import GlassCard from '@/components/ui/GlassCard';
 import Cookies from 'js-cookie';
+import { Sparkles, FileText, CheckCircle2, AlertCircle } from 'lucide-react';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
 
@@ -18,7 +20,6 @@ export default function ResumePage() {
   const [successMessage, setSuccessMessage] = useState('');
   const [errorMessage, setErrorMessage] = useState('');
 
-  // Protect route & fetch saved resume
   useEffect(() => {
     if (!authLoading) {
       if (!user || user.role !== 'candidate') {
@@ -73,40 +74,44 @@ export default function ResumePage() {
 
   if (authLoading || fetching) {
     return (
-      <div className="max-w-3xl mx-auto py-12 px-4 text-center">
-        <div className="inline-block animate-spin rounded-full h-8 w-8 border-4 border-indigo-600 border-t-transparent"></div>
-        <p className="mt-2 text-slate-600 text-sm font-medium">Loading resume data...</p>
+      <div className="max-w-3xl mx-auto py-16 px-4 text-center">
+        <div className="inline-block animate-spin rounded-full h-8 w-8 border-4 border-sky-600 border-t-transparent"></div>
+        <p className="mt-3 text-slate-500 text-sm">Loading resume data...</p>
       </div>
     );
   }
 
   return (
-    <div className="max-w-3xl mx-auto py-6 px-4">
-      <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6 sm:p-8">
-        <h1 className="text-2xl font-bold text-slate-900 mb-2">My Plain Text Resume</h1>
+    <div className="max-w-3xl mx-auto py-10 px-4">
+      <GlassCard className="p-6 sm:p-8 border-slate-200/80 bg-white shadow-xl shadow-slate-200/50">
+        <div className="flex items-center space-x-3 mb-2">
+          <div className="w-9 h-9 rounded-xl bg-indigo-50 border border-indigo-200 flex items-center justify-center">
+            <FileText className="w-5 h-5 text-indigo-600" />
+          </div>
+          <h1 className="text-2xl font-extrabold text-slate-900 tracking-tight font-serif">My Plain Text Resume</h1>
+        </div>
         
-        <p className="text-sm text-slate-600 mb-6">
+        <p className="text-xs text-slate-500 mb-6">
           Paste your resume as plain text. This will be used to calculate your match score against job listings.
         </p>
 
         {successMessage && (
-          <div className="mb-6 p-4 bg-emerald-50 border border-emerald-200 text-emerald-800 text-sm rounded-lg flex items-center">
-            <svg className="w-5 h-5 mr-2 text-emerald-600 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
-              <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-            </svg>
+          <div className="mb-6 p-4 bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs rounded-xl flex items-center">
+            <CheckCircle2 className="w-4 h-4 mr-2 text-emerald-600 flex-shrink-0" />
             <span>{successMessage}</span>
           </div>
         )}
 
         {errorMessage && (
-          <div className="mb-6 p-4 bg-red-50 border border-red-200 text-red-700 text-sm rounded-lg">
-            {errorMessage}
+          <div className="mb-6 p-4 bg-rose-50 border border-rose-200 text-rose-800 text-xs rounded-xl flex items-center">
+            <AlertCircle className="w-4 h-4 mr-2 text-rose-600 flex-shrink-0" />
+            <span>{errorMessage}</span>
           </div>
         )}
 
         <form onSubmit={handleSave} className="space-y-6">
           <div>
-            <label className="block text-sm font-semibold text-slate-800 mb-2">
+            <label className="block text-xs font-semibold text-slate-700 mb-2">
               Resume Content (Plain Text)
             </label>
             <textarea
@@ -114,32 +119,35 @@ export default function ResumePage() {
               value={resumeText}
               onChange={(e) => setResumeText(e.target.value)}
               placeholder="Paste your plain text resume here (skills, education, work experience, technologies, etc.)..."
-              className="w-full p-4 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 font-mono text-sm text-slate-800 placeholder-slate-400 bg-slate-50 focus:bg-white transition-colors"
+              className="w-full p-4 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:border-sky-500 font-mono text-xs text-slate-800 placeholder-slate-400 transition-colors leading-relaxed"
             />
           </div>
 
           <div className="flex items-center justify-between pt-2 border-t border-slate-100">
-            <span className="text-xs text-slate-500">
+            <span className="text-xs text-slate-400">
               Word count: {resumeText.trim() ? resumeText.trim().split(/\s+/).length : 0} words
             </span>
 
             <button
               type="submit"
               disabled={saving}
-              className="px-6 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-medium text-sm rounded-lg shadow-sm transition-colors disabled:opacity-50 flex items-center space-x-2"
+              className="px-6 py-2.5 bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs rounded-xl shadow-md hover:scale-105 transition-all disabled:opacity-50 flex items-center space-x-2"
             >
               {saving ? (
                 <>
-                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                  <div className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
                   <span>Saving & Computing Embedding...</span>
                 </>
               ) : (
-                <span>Save Resume</span>
+                <>
+                  <Sparkles className="w-3.5 h-3.5 text-sky-400" />
+                  <span>Save Resume</span>
+                </>
               )}
             </button>
           </div>
         </form>
-      </div>
+      </GlassCard>
     </div>
   );
 }

@@ -1,6 +1,13 @@
 import './globals.css';
+import { Inter } from 'next/font/google';
 import { AuthProvider } from '@/context/AuthContext';
 import Navbar from '@/components/Navbar';
+
+const inter = Inter({
+  subsets: ['latin'],
+  display: 'swap',
+  variable: '--font-inter',
+});
 
 export const metadata = {
   title: 'JobBoard AI-Match | AI-Powered Job Platform',
@@ -9,11 +16,11 @@ export const metadata = {
 
 export default function RootLayout({ children }) {
   return (
-    <html lang="en">
-      <body className="bg-slate-50 min-h-screen flex flex-col text-slate-900 font-sans antialiased">
+    <html lang="en" className={inter.variable}>
+      <body className="bg-[#FAFAFC] text-[#0F172A] min-h-screen flex flex-col font-sans antialiased selection:bg-sky-500 selection:text-white overflow-x-hidden">
         <AuthProvider>
           <Navbar />
-          <main className="flex-1 max-w-7xl w-full mx-auto p-4 sm:p-6 lg:p-8">
+          <main className="flex-1 w-full min-h-screen">
             {children}
           </main>
         </AuthProvider>
