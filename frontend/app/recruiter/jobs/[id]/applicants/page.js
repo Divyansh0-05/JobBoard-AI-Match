@@ -91,7 +91,7 @@ export default function ApplicantRankingPage({ params: paramsPromise }) {
 
   if (authLoading || loading) {
     return (
-      <div className="max-w-5xl mx-auto py-16 px-4 text-center">
+      <div className="max-w-5xl mx-auto pt-32 pb-16 px-4 text-center">
         <div className="inline-block animate-spin rounded-full h-8 w-8 border-4 border-sky-600 border-t-transparent"></div>
         <p className="mt-3 text-slate-500 text-sm">Loading applicant rankings...</p>
       </div>
@@ -100,7 +100,7 @@ export default function ApplicantRankingPage({ params: paramsPromise }) {
 
   if (unauthorized) {
     return (
-      <div className="max-w-3xl mx-auto py-16 px-4 text-center">
+      <div className="max-w-3xl mx-auto pt-28 pb-12 px-4 text-center">
         <GlassCard className="p-8 border-rose-200 bg-rose-50 max-w-md mx-auto">
           <div className="w-12 h-12 bg-rose-100 text-rose-600 rounded-full flex items-center justify-center mx-auto mb-4 border border-rose-200">
             <AlertTriangle className="w-6 h-6" />
@@ -121,7 +121,7 @@ export default function ApplicantRankingPage({ params: paramsPromise }) {
   }
 
   return (
-    <div className="max-w-5xl mx-auto py-10 px-4">
+    <div className="max-w-5xl mx-auto pt-28 pb-12 px-4">
       <div className="mb-8 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
           <h1 className="text-3xl font-extrabold text-slate-900 tracking-tight font-serif">Ranked Applicants</h1>

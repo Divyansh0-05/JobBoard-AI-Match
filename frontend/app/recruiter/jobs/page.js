@@ -68,7 +68,7 @@ export default function RecruiterJobsPage() {
 
   if (authLoading || loading) {
     return (
-      <div className="max-w-5xl mx-auto py-16 px-4 text-center">
+      <div className="max-w-5xl mx-auto pt-32 pb-16 px-4 text-center">
         <div className="inline-block animate-spin rounded-full h-8 w-8 border-4 border-sky-600 border-t-transparent"></div>
         <p className="mt-3 text-slate-500 text-sm">Loading your job listings...</p>
       </div>
@@ -76,7 +76,7 @@ export default function RecruiterJobsPage() {
   }
 
   return (
-    <div className="max-w-6xl mx-auto py-10 px-4 sm:px-6">
+    <div className="max-w-6xl mx-auto pt-28 pb-12 px-4 sm:px-6">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8">
         <div>
           <h1 className="text-3xl font-extrabold text-slate-900 tracking-tight font-serif">My Posted Jobs</h1>

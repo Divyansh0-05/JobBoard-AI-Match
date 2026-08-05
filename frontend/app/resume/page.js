@@ -74,7 +74,7 @@ export default function ResumePage() {
 
   if (authLoading || fetching) {
     return (
-      <div className="max-w-3xl mx-auto py-16 px-4 text-center">
+      <div className="max-w-3xl mx-auto pt-32 pb-16 px-4 text-center">
         <div className="inline-block animate-spin rounded-full h-8 w-8 border-4 border-sky-600 border-t-transparent"></div>
         <p className="mt-3 text-slate-500 text-sm">Loading resume data...</p>
       </div>
@@ -82,7 +82,7 @@ export default function ResumePage() {
   }
 
   return (
-    <div className="max-w-3xl mx-auto py-10 px-4">
+    <div className="max-w-3xl mx-auto pt-28 pb-12 px-4">
       <GlassCard className="p-6 sm:p-8 border-slate-200/80 bg-white shadow-xl shadow-slate-200/50">
         <div className="flex items-center space-x-3 mb-2">
           <div className="w-9 h-9 rounded-xl bg-indigo-50 border border-indigo-200 flex items-center justify-center">

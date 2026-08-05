@@ -70,7 +70,7 @@ export default function MyApplicationsPage() {
 
   if (authLoading || loading) {
     return (
-      <div className="max-w-5xl mx-auto py-16 px-4 text-center">
+      <div className="max-w-5xl mx-auto pt-32 pb-16 px-4 text-center">
         <div className="inline-block animate-spin rounded-full h-8 w-8 border-4 border-sky-600 border-t-transparent"></div>
         <p className="mt-3 text-slate-500 text-sm">Loading your applications...</p>
       </div>
@@ -78,7 +78,7 @@ export default function MyApplicationsPage() {
   }
 
   return (
-    <div className="max-w-5xl mx-auto py-10 px-4">
+    <div className="max-w-5xl mx-auto pt-28 pb-12 px-4">
       <div className="mb-8">
         <h1 className="text-3xl font-extrabold text-slate-900 tracking-tight font-serif">My Applications</h1>
         <p className="text-sm text-slate-500 mt-1">Track all job applications and your snapshot AI match scores.</p>

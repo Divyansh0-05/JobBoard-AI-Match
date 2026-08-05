@@ -119,14 +119,14 @@ export default function CandidateJobsPage() {
 
   if (authLoading) {
     return (
-      <div className="max-w-5xl mx-auto py-16 px-4 text-center">
+      <div className="max-w-5xl mx-auto pt-32 pb-16 px-4 text-center">
         <div className="inline-block animate-spin rounded-full h-8 w-8 border-4 border-sky-600 border-t-transparent"></div>
       </div>
     );
   }
 
   return (
-    <div className="max-w-6xl mx-auto py-10 px-4 sm:px-6">
+    <div className="max-w-6xl mx-auto pt-28 pb-12 px-4 sm:px-6">
       <div className="mb-8 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         <div>
           <h1 className="text-3xl font-extrabold text-slate-900 tracking-tight font-serif">Explore Matched Jobs</h1>
