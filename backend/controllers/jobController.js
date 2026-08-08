@@ -109,7 +109,7 @@ const updateJob = async (req, res) => {
       return res.status(404).json({ message: 'Job not found' });
     }
 
-    if (job.recruiterId.toString() !== req.user.userId) {
+    if (!job.recruiterId || job.recruiterId.toString() !== req.user.userId) {
       return res.status(403).json({ message: 'Access forbidden: You do not own this job listing' });
     }
 
@@ -142,7 +142,7 @@ const deleteJob = async (req, res) => {
       return res.status(404).json({ message: 'Job not found' });
     }
 
-    if (job.recruiterId.toString() !== req.user.userId) {
+    if (!job.recruiterId || job.recruiterId.toString() !== req.user.userId) {
       return res.status(403).json({ message: 'Access forbidden: You do not own this job listing' });
     }
 

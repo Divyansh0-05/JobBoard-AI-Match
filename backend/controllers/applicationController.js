@@ -56,7 +56,7 @@ const getMyApplications = async (req, res) => {
     const applications = await Application.find({ candidateId: req.user.userId })
       .populate({
         path: 'jobId',
-        select: 'title location status jobType salaryRange recruiterId',
+        select: 'title companyName isExternal externalUrl location status jobType salaryRange recruiterId',
         populate: {
           path: 'recruiterId',
           select: 'name email'
@@ -81,7 +81,7 @@ const getApplicantsForJob = async (req, res) => {
       return res.status(404).json({ message: 'Job listing not found.' });
     }
 
-    if (job.recruiterId.toString() !== req.user.userId) {
+    if (!job.recruiterId || job.recruiterId.toString() !== req.user.userId) {
       return res.status(403).json({ message: 'Access forbidden: You do not own this job listing.' });
     }
 

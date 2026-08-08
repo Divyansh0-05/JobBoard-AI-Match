@@ -1,5 +1,3 @@
-const axios = require('axios');
-
 /**
  * Fetches live job postings posted in the last 12 hours using Apify API actor.
  * @param {Object} options 
@@ -14,39 +12,42 @@ async function fetchJobsLast12Hours({ searchKeywords = 'Software Developer', loc
     try {
       console.log(`[Apify] Triggering live Apify scraper for "${searchKeywords}" posted in last 12 hours...`);
 
-      // Call Apify actor endpoint (e.g. google-jobs-scraper or linkedin-jobs-scraper)
-      // Reference endpoint: https://api.apify.com/v2/acts/apify~google-jobs-scraper/run-sync-get-dataset-items
-      const response = await axios.post(
-        `https://api.apify.com/v2/acts/apify~google-jobs-scraper/run-sync-get-dataset-items?token=${token.trim()}`,
-        {
+      // Call Apify actor endpoint using native fetch
+      const endpoint = `https://api.apify.com/v2/acts/apify~google-jobs-scraper/run-sync-get-dataset-items?token=${token.trim()}`;
+      const response = await fetch(endpoint, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
           queries: `${searchKeywords} in ${location}`,
           maxPagesPerQuery: 1,
           publishedAt: 'past24Hours'
-        },
-        { timeout: 25000 }
-      );
+        })
+      });
 
-      if (Array.isArray(response.data) && response.data.length > 0) {
-        console.log(`[Apify] Successfully retrieved ${response.data.length} live jobs from Apify.`);
-        const twelveHoursAgo = new Date(Date.now() - 12 * 60 * 60 * 1000);
+      if (response.ok) {
+        const data = await response.json();
+        if (Array.isArray(data) && data.length > 0) {
+          console.log(`[Apify] Successfully retrieved ${data.length} live jobs from Apify.`);
+          const twelveHoursAgo = new Date(Date.now() - 12 * 60 * 60 * 1000);
 
-        return response.data
-          .filter(item => item.title && item.description)
-          .map((item, idx) => {
-            const postedDate = item.postedAt ? new Date(item.postedAt) : new Date(Date.now() - (idx + 1) * 3600 * 1000);
-            return {
-              externalId: item.id || item.url || `apify_job_${Date.now()}_${idx}`,
-              title: item.title,
-              companyName: item.companyName || item.company || 'Tech Company',
-              description: item.description,
-              location: item.location || location,
-              jobType: (item.contractType || '').toLowerCase().includes('intern') ? 'Internship' : 'Full-time',
-              salaryRange: item.salary || '$90,000 - $140,000',
-              externalUrl: item.url || item.applyUrl || 'https://google.com/search?q=jobs',
-              postedAt: postedDate
-            };
-          })
-          .filter(job => job.postedAt >= twelveHoursAgo);
+          return data
+            .filter(item => item && item.title && item.description)
+            .map((item, idx) => {
+              const postedDate = item.postedAt ? new Date(item.postedAt) : new Date(Date.now() - (idx + 1) * 3600 * 1000);
+              return {
+                externalId: item.id || item.url || `apify_job_${Date.now()}_${idx}`,
+                title: item.title,
+                companyName: item.companyName || item.company || 'Tech Company',
+                description: item.description,
+                location: item.location || location,
+                jobType: (item.contractType || '').toLowerCase().includes('intern') ? 'Internship' : 'Full-time',
+                salaryRange: item.salary || '$90,000 - $140,000',
+                externalUrl: item.url || item.applyUrl || 'https://google.com/search?q=jobs',
+                postedAt: postedDate
+              };
+            })
+            .filter(job => job.postedAt >= twelveHoursAgo);
+        }
       }
     } catch (error) {
       console.error('[Apify] Live Apify scraper error:', error.message || error);
