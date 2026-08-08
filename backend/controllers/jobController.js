@@ -2,6 +2,7 @@ const Job = require('../models/Job');
 const User = require('../models/User');
 const Application = require('../models/Application');
 const { getEmbedding, cosineSimilarity, mapSimilarityToScore } = require('../lib/matchScore');
+const { fetchJobsLast12Hours } = require('../lib/apifyService');
 
 // Create a new job (Recruiter only)
 const createJob = async (req, res) => {
@@ -30,6 +31,50 @@ const createJob = async (req, res) => {
   } catch (error) {
     console.error('Error creating job:', error);
     res.status(500).json({ message: 'Failed to create job', error: error.message });
+  }
+};
+
+// Sync live job postings from Apify (posted in last 12 hours)
+const syncApifyJobs = async (req, res) => {
+  try {
+    const { searchKeywords, location } = req.body || {};
+    const scrapedJobs = await fetchJobsLast12Hours({ searchKeywords, location });
+
+    let newJobsCount = 0;
+
+    for (const scrapedJob of scrapedJobs) {
+      const existing = await Job.findOne({ externalId: scrapedJob.externalId });
+      if (!existing) {
+        // Precompute Gemini vector embedding for the external job description
+        const descriptionEmbedding = await getEmbedding(scrapedJob.description);
+
+        await Job.create({
+          title: scrapedJob.title,
+          companyName: scrapedJob.companyName,
+          description: scrapedJob.description,
+          descriptionEmbedding,
+          location: scrapedJob.location,
+          jobType: scrapedJob.jobType,
+          salaryRange: scrapedJob.salaryRange,
+          isExternal: true,
+          externalId: scrapedJob.externalId,
+          externalUrl: scrapedJob.externalUrl,
+          postedAt: scrapedJob.postedAt || new Date(),
+          status: 'open'
+        });
+
+        newJobsCount++;
+      }
+    }
+
+    res.json({
+      message: `Apify sync completed successfully. Ingested ${newJobsCount} new live jobs from the last 12 hours.`,
+      newJobsCount,
+      totalScraped: scrapedJobs.length
+    });
+  } catch (error) {
+    console.error('Error syncing Apify jobs:', error);
+    res.status(500).json({ message: 'Failed to sync live jobs from Apify', error: error.message });
   }
 };
 
@@ -186,6 +231,7 @@ const getMatchedJobs = async (req, res) => {
 
 module.exports = {
   createJob,
+  syncApifyJobs,
   getMyJobs,
   updateJob,
   deleteJob,

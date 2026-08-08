@@ -6,7 +6,7 @@ import Link from 'next/link';
 import axios from 'axios';
 import { useAuth } from '@/context/AuthContext';
 import GlassCard from '@/components/ui/GlassCard';
-import { Sparkles, Search, Briefcase, MapPin, DollarSign, CheckCircle2, AlertTriangle, Filter } from 'lucide-react';
+import { Sparkles, Search, Briefcase, MapPin, DollarSign, CheckCircle2, AlertTriangle, Filter, RefreshCw, ExternalLink, Clock, Building } from 'lucide-react';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
 
@@ -17,6 +17,8 @@ export default function CandidateJobsPage() {
   const [jobs, setJobs] = useState([]);
   const [appliedJobIds, setAppliedJobIds] = useState(new Set());
   const [loading, setLoading] = useState(true);
+  const [syncingApify, setSyncingApify] = useState(false);
+  const [syncStatusMessage, setSyncStatusMessage] = useState('');
   const [resumeRequired, setResumeRequired] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
   const [applyingId, setApplyingId] = useState(null);
@@ -81,6 +83,25 @@ export default function CandidateJobsPage() {
     }
   }, [authLoading, user, router, fetchMyApplications, fetchMatchedJobs]);
 
+  const handleSyncApify = async () => {
+    setSyncingApify(true);
+    setSyncStatusMessage('');
+    try {
+      const res = await axios.post(
+        `${API_URL}/api/jobs/sync-apify`,
+        { searchKeywords: search || 'Software Developer', location: location || 'Remote' },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      setSyncStatusMessage(res.data.message || 'Apify sync complete!');
+      await fetchMatchedJobs();
+    } catch (err) {
+      console.error('Apify sync error:', err);
+      alert(err.response?.data?.message || 'Failed to sync live jobs from Apify.');
+    } finally {
+      setSyncingApify(false);
+    }
+  };
+
   const handleApply = async (jobId) => {
     setApplyingId(jobId);
     try {
@@ -99,6 +120,14 @@ export default function CandidateJobsPage() {
     } finally {
       setApplyingId(null);
     }
+  };
+
+  const formatRelativeTime = (dateString) => {
+    if (!dateString) return 'Recently';
+    const hours = Math.round((Date.now() - new Date(dateString).getTime()) / (1000 * 3600));
+    if (hours <= 1) return 'Posted 1 hour ago';
+    if (hours < 24) return `Posted ${hours} hours ago`;
+    return `Posted ${Math.round(hours / 24)} days ago`;
   };
 
   const getMatchScoreBadge = (score) => {
@@ -130,9 +159,28 @@ export default function CandidateJobsPage() {
       <div className="mb-8 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         <div>
           <h1 className="text-3xl font-extrabold text-slate-900 tracking-tight font-serif">Explore Matched Jobs</h1>
-          <p className="text-sm text-slate-500 mt-1">Jobs ranked by AI match percentage based on your saved resume.</p>
+          <p className="text-sm text-slate-500 mt-1">Real-time jobs ranked by AI match percentage based on your saved resume.</p>
         </div>
+
+        {/* Sync Live Jobs Button */}
+        {!resumeRequired && (
+          <button
+            onClick={handleSyncApify}
+            disabled={syncingApify}
+            className="inline-flex items-center justify-center space-x-2 px-5 py-2.5 bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs rounded-xl shadow-lg hover:scale-105 transition-all disabled:opacity-50"
+          >
+            <RefreshCw className={`w-4 h-4 text-sky-400 ${syncingApify ? 'animate-spin' : ''}`} />
+            <span>{syncingApify ? 'Scraping Apify (Last 12h)...' : 'Sync Live Jobs (Last 12 Hrs)'}</span>
+          </button>
+        )}
       </div>
+
+      {syncStatusMessage && (
+        <div className="mb-6 p-4 bg-sky-50 border border-sky-200 text-sky-800 text-xs font-medium rounded-xl flex items-center justify-between">
+          <span>{syncStatusMessage}</span>
+          <button onClick={() => setSyncStatusMessage('')} className="text-sky-600 hover:text-sky-900 font-bold ml-2">✕</button>
+        </div>
+      )}
 
       {resumeRequired ? (
         <GlassCard className="border-amber-200 bg-amber-50/60 p-8 text-center my-8 max-w-2xl mx-auto shadow-sm">
@@ -225,33 +273,61 @@ export default function CandidateJobsPage() {
                   <GlassCard key={job._id} className="p-6 border-slate-200/80 hover:border-sky-300 transition-colors bg-white shadow-sm hover:shadow-md">
                     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-3">
                       <div>
-                        <div className="flex items-center space-x-3 mb-1.5">
+                        <div className="flex flex-wrap items-center gap-2 mb-1.5">
                           <h2 className="text-xl font-bold text-slate-900 tracking-tight">{job.title}</h2>
+                          {job.isExternal && (
+                            <span className="px-2.5 py-0.5 rounded-full text-[10px] font-extrabold uppercase tracking-wider bg-purple-50 text-purple-700 border border-purple-200">
+                              Apify Live Scraped
+                            </span>
+                          )}
                           {getMatchScoreBadge(job.matchScore || 0)}
                         </div>
-                        <div className="flex flex-wrap gap-2 text-xs text-slate-600 mt-2">
+
+                        <div className="flex flex-wrap gap-2.5 text-xs text-slate-600 mt-2 items-center">
+                          {job.companyName && (
+                            <span className="font-semibold text-slate-800 flex items-center">
+                              <Building className="w-3.5 h-3.5 text-slate-400 mr-1" />
+                              {job.companyName}
+                            </span>
+                          )}
                           <span className="px-2.5 py-1 bg-slate-100 border border-slate-200 rounded-md font-medium">{job.jobType || 'Full-time'}</span>
                           {job.location && <span className="px-2.5 py-1 bg-slate-100 border border-slate-200 rounded-md font-medium">📍 {job.location}</span>}
                           {job.salaryRange && <span className="px-2.5 py-1 bg-slate-100 border border-slate-200 rounded-md font-medium">💰 {job.salaryRange}</span>}
+                          <span className="text-slate-400 text-xs flex items-center">
+                            <Clock className="w-3 h-3 text-slate-400 mr-1" />
+                            {formatRelativeTime(job.postedAt || job.createdAt)}
+                          </span>
                         </div>
                       </div>
 
-                      <div>
+                      <div className="flex flex-wrap items-center gap-2">
+                        {job.externalUrl && (
+                          <a
+                            href={job.externalUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="px-4 py-2.5 text-xs font-bold text-sky-700 bg-sky-50 hover:bg-sky-100 border border-sky-200 rounded-xl transition-all flex items-center space-x-1"
+                          >
+                            <span>Apply on Company Site</span>
+                            <ExternalLink className="w-3.5 h-3.5 text-sky-600" />
+                          </a>
+                        )}
+
                         {isApplied ? (
                           <button
                             disabled
-                            className="w-full sm:w-auto px-5 py-2.5 text-xs font-bold bg-emerald-50 text-emerald-700 border border-emerald-300 rounded-xl cursor-not-allowed flex items-center justify-center space-x-1.5"
+                            className="px-5 py-2.5 text-xs font-bold bg-emerald-50 text-emerald-700 border border-emerald-300 rounded-xl cursor-not-allowed flex items-center justify-center space-x-1.5"
                           >
                             <CheckCircle2 className="w-4 h-4 text-emerald-600" />
-                            <span>Applied</span>
+                            <span>Saved</span>
                           </button>
                         ) : (
                           <button
                             onClick={() => handleApply(job._id)}
                             disabled={isApplying}
-                            className="w-full sm:w-auto px-6 py-2.5 text-xs font-bold bg-slate-900 hover:bg-slate-800 text-white rounded-xl shadow-md hover:scale-105 transition-all disabled:opacity-50"
+                            className="px-5 py-2.5 text-xs font-bold bg-slate-900 hover:bg-slate-800 text-white rounded-xl shadow-md hover:scale-105 transition-all disabled:opacity-50"
                           >
-                            {isApplying ? 'Applying...' : 'Apply Now'}
+                            {isApplying ? 'Applying...' : '1-Click Apply'}
                           </button>
                         )}
                       </div>

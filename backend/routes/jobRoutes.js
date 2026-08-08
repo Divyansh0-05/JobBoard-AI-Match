@@ -3,6 +3,7 @@ const router = express.Router();
 
 const {
   createJob,
+  syncApifyJobs,
   getMyJobs,
   updateJob,
   deleteJob,
@@ -20,6 +21,9 @@ router.get('/', getOpenJobs);
 
 // Candidate route: Get open jobs ranked by matchScore
 router.get('/matched', authMiddleware, requireRole('candidate'), getMatchedJobs);
+
+// Sync route: Trigger Apify job scraping for the last 12 hours
+router.post('/sync-apify', authMiddleware, syncApifyJobs);
 
 // Recruiter route: Get jobs posted by logged-in recruiter
 router.get('/mine', authMiddleware, requireRole('recruiter'), getMyJobs);

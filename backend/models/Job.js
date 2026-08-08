@@ -4,12 +4,16 @@ const jobSchema = new mongoose.Schema({
   recruiterId: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User',
-    required: true
+    required: function() { return !this.isExternal; }
   },
   title: {
     type: String,
     required: true,
     trim: true
+  },
+  companyName: {
+    type: String,
+    default: 'External Company'
   },
   description: {
     type: String,
@@ -21,11 +25,12 @@ const jobSchema = new mongoose.Schema({
   },
   location: {
     type: String,
-    default: ''
+    default: 'Remote'
   },
   jobType: {
     type: String,
-    enum: ['Full-time', 'Internship']
+    enum: ['Full-time', 'Internship'],
+    default: 'Full-time'
   },
   salaryRange: {
     type: String,
@@ -35,6 +40,23 @@ const jobSchema = new mongoose.Schema({
     type: String,
     enum: ['open', 'closed'],
     default: 'open'
+  },
+  isExternal: {
+    type: Boolean,
+    default: false
+  },
+  externalId: {
+    type: String,
+    default: null,
+    sparse: true
+  },
+  externalUrl: {
+    type: String,
+    default: ''
+  },
+  postedAt: {
+    type: Date,
+    default: Date.now
   },
   createdAt: {
     type: Date,
