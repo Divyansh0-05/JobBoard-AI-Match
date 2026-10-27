@@ -13,14 +13,15 @@ async function fetchJobsLast12Hours({ searchKeywords = 'Software Developer', loc
       console.log(`[Apify] Triggering live Apify scraper for "${searchKeywords}" posted in last 12 hours...`);
 
       // Call Apify actor endpoint using native fetch
-      const endpoint = `https://api.apify.com/v2/acts/apify~google-jobs-scraper/run-sync-get-dataset-items?token=${token.trim()}`;
+      const endpoint = `https://api.apify.com/v2/acts/johnvc~Google-Jobs-Scraper/run-sync-get-dataset-items?token=${token.trim()}`;
       const response = await fetch(endpoint, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          queries: `${searchKeywords} in ${location}`,
-          maxPagesPerQuery: 1,
-          publishedAt: 'past24Hours'
+          query: searchKeywords,
+          location,
+          posted_within: '24h',
+          num_results: 10
         })
       });
 
@@ -33,16 +34,20 @@ async function fetchJobsLast12Hours({ searchKeywords = 'Software Developer', loc
           return data
             .filter(item => item && item.title && item.description)
             .map((item, idx) => {
-              const postedDate = item.postedAt ? new Date(item.postedAt) : new Date(Date.now() - (idx + 1) * 3600 * 1000);
+              const ext = item.detected_extensions || {};
+              const ago = /(\d+)\s*(minute|hour|day)/.exec(ext.posted_at || '');
+              const agoMs = ago ? Number(ago[1]) * { minute: 60, hour: 3600, day: 86400 }[ago[2]] * 1000 : (idx + 1) * 3600 * 1000;
+              const postedDate = new Date(Date.now() - agoMs);
+              const applyLink = Array.isArray(item.apply_options) && item.apply_options[0] ? item.apply_options[0].link : null;
               return {
-                externalId: item.id || item.url || `apify_job_${Date.now()}_${idx}`,
+                externalId: item.job_id || item.share_link || `apify_job_${Date.now()}_${idx}`,
                 title: item.title,
-                companyName: item.companyName || item.company || 'Tech Company',
+                companyName: item.company_name || 'Tech Company',
                 description: item.description,
                 location: item.location || location,
-                jobType: (item.contractType || '').toLowerCase().includes('intern') ? 'Internship' : 'Full-time',
-                salaryRange: item.salary || '$90,000 - $140,000',
-                externalUrl: item.url || item.applyUrl || 'https://google.com/search?q=jobs',
+                jobType: (ext.schedule_type || '').toLowerCase().includes('intern') ? 'Internship' : 'Full-time',
+                salaryRange: ext.salary || '$90,000 - $140,000',
+                externalUrl: applyLink || item.share_link || 'https://google.com/search?q=jobs',
                 postedAt: postedDate
               };
             })
